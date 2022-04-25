@@ -326,10 +326,8 @@ namespace SixLabors.ImageSharp.Web.Middleware
             CommandCollection commands,
             bool retry)
         {
-            // Create a hashed cache key
-            string key = this.cacheHash.Create(
-                this.cacheKey.Create(httpContext, commands),
-                this.options.CacheHashLength);
+            // Create cache key
+            string key = this.cacheKey.Create(httpContext, commands);
 
             // Check the cache, if present, not out of date and not requiring an update
             // we'll simply serve the file from there.
@@ -448,7 +446,8 @@ namespace SixLabors.ImageSharp.Web.Middleware
                                 outStream.Length);
 
                             // Save the image to the cache and send the response to the caller.
-                            await this.cache.SetAsync(key, outStream, cachedImageMetadata);
+                            string cacheKey = this.cacheHash.Create(key, this.options.CacheHashLength);
+                            await this.cache.SetAsync(cacheKey, outStream, cachedImageMetadata);
                             outStream.Position = 0;
 
                             // Remove any resolver from the cache so we always resolve next request
@@ -512,9 +511,10 @@ namespace SixLabors.ImageSharp.Web.Middleware
             (IImageCacheResolver ImageCacheResolver, ImageCacheMetadata ImageCacheMetadata) cachedImage = await
                 CacheResolverLru.GetOrAddAsync(
                     key,
-                    async k =>
+                    async _ =>
                     {
-                        IImageCacheResolver resolver = await this.cache.GetAsync(k);
+                        string cacheKey = this.cacheHash.Create(key, this.options.CacheHashLength);
+                        IImageCacheResolver resolver = await this.cache.GetAsync(cacheKey);
                         ImageCacheMetadata metadata = default;
                         if (resolver != null)
                         {
