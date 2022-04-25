@@ -78,14 +78,14 @@ namespace SixLabors.ImageSharp.Web.Middleware
         private readonly IImageWebProcessor[] processors;
 
         /// <summary>
-        /// The cache key.
-        /// </summary>
-        private readonly ICacheKey cacheKey;
-
-        /// <summary>
         /// The image cache.
         /// </summary>
         private readonly IImageCache cache;
+
+        /// <summary>
+        /// The cache key.
+        /// </summary>
+        private readonly ICacheKey cacheKey;
 
         /// <summary>
         /// The hashing implementation to use when generating cached file names.
@@ -93,9 +93,9 @@ namespace SixLabors.ImageSharp.Web.Middleware
         private readonly ICacheHash cacheHash;
 
         /// <summary>
-        /// The collection of known commands gathered from the processors.
+        /// Used to parse processing commands.
         /// </summary>
-        private readonly HashSet<string> knownCommands;
+        private readonly CommandParser commandParser;
 
         /// <summary>
         /// Contains various helper methods based on the current configuration.
@@ -103,9 +103,9 @@ namespace SixLabors.ImageSharp.Web.Middleware
         private readonly FormatUtilities formatUtilities;
 
         /// <summary>
-        /// Used to parse processing commands.
+        /// The lock used to prevent concurrent processing of the same exact image request.
         /// </summary>
-        private readonly CommandParser commandParser;
+        private readonly AsyncKeyReaderWriterLock<string> asyncKeyLock;
 
         /// <summary>
         /// The culture to use when parsing processing commands.
@@ -113,9 +113,9 @@ namespace SixLabors.ImageSharp.Web.Middleware
         private readonly CultureInfo parserCulture;
 
         /// <summary>
-        /// The lock used to prevent concurrent processing of the same exact image request.
+        /// The collection of known commands gathered from the processors.
         /// </summary>
-        private readonly AsyncKeyReaderWriterLock<string> asyncKeyLock;
+        private readonly HashSet<string> knownCommands;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ImageSharpMiddleware"/> class.
@@ -161,6 +161,7 @@ namespace SixLabors.ImageSharp.Web.Middleware
 
             this.next = next;
             this.options = options.Value;
+            this.logger = loggerFactory.CreateLogger<ImageSharpMiddleware>();
             this.requestParser = requestParser;
             this.providers = resolvers as IImageProvider[] ?? resolvers.ToArray();
             this.processors = processors as IImageWebProcessor[] ?? processors.ToArray();
@@ -168,6 +169,9 @@ namespace SixLabors.ImageSharp.Web.Middleware
             this.cacheKey = cacheKey;
             this.cacheHash = cacheHash;
             this.commandParser = commandParser;
+            this.formatUtilities = formatUtilities;
+            this.asyncKeyLock = asyncKeyLock;
+
             this.parserCulture = this.options.UseInvariantParsingCulture
                 ? CultureInfo.InvariantCulture
                 : CultureInfo.CurrentCulture;
@@ -182,10 +186,6 @@ namespace SixLabors.ImageSharp.Web.Middleware
             }
 
             this.knownCommands = commands;
-
-            this.logger = loggerFactory.CreateLogger<ImageSharpMiddleware>();
-            this.formatUtilities = formatUtilities;
-            this.asyncKeyLock = asyncKeyLock;
         }
 
         /// <summary>
