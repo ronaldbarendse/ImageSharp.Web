@@ -185,7 +185,7 @@ namespace SixLabors.ImageSharp.Web.Middleware
         /// <returns>The <see cref="Task"/>.</returns>
         public Task Invoke(HttpContext httpContext) => this.Invoke(httpContext, false);
 
-        private async Task Invoke(HttpContext httpContext, bool retry)
+        private async Task Invoke(HttpContext httpContext, bool isRetry)
         {
             // Get the correct provider for the request
             IImageProvider provider = null;
@@ -272,7 +272,7 @@ namespace SixLabors.ImageSharp.Web.Middleware
                 sourceImageResolver,
                 new ImageContext(httpContext, this.options),
                 commands,
-                retry);
+                isRetry);
         }
 
         private static void SetBadRequest(HttpContext httpContext)
@@ -288,7 +288,7 @@ namespace SixLabors.ImageSharp.Web.Middleware
             IImageResolver sourceImageResolver,
             ImageContext imageContext,
             CommandCollection commands,
-            bool retry)
+            bool isRetry)
         {
             // Create a hashed cache key
             string key = this.cacheHash.Create(
@@ -305,7 +305,7 @@ namespace SixLabors.ImageSharp.Web.Middleware
 
             if (!readResult.IsNewOrUpdated)
             {
-                await this.SendResponseAsync(httpContext, imageContext, key, readResult.CacheImageMetadata, readResult.Resolver, null, retry);
+                await this.SendResponseAsync(httpContext, imageContext, key, readResult.CacheImageMetadata, readResult.Resolver, null, isRetry);
                 return;
             }
 
@@ -431,7 +431,7 @@ namespace SixLabors.ImageSharp.Web.Middleware
                     }
                 }
 
-                await this.SendResponseAsync(httpContext, imageContext, key, readResult.CacheImageMetadata, readResult.Resolver, outStream, retry);
+                await this.SendResponseAsync(httpContext, imageContext, key, readResult.CacheImageMetadata, readResult.Resolver, outStream, isRetry);
             }
             finally
             {
@@ -518,7 +518,7 @@ namespace SixLabors.ImageSharp.Web.Middleware
             ImageCacheMetadata metadata,
             IImageCacheResolver cacheResolver,
             Stream stream,
-            bool retry)
+            bool isRetry)
         {
             imageContext.ComprehendRequestHeaders(metadata.CacheLastWriteTimeUtc, metadata.ContentLength);
 
@@ -549,7 +549,7 @@ namespace SixLabors.ImageSharp.Web.Middleware
                         }
                         catch (Exception ex)
                         {
-                            if (!retry)
+                            if (!isRetry)
                             {
                                 // The image has failed to be returned from the cache.
                                 // This can happen if the cached image has been physically deleted but the item is still in the LRU cache.
