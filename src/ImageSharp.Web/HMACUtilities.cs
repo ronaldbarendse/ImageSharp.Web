@@ -18,7 +18,8 @@ namespace SixLabors.ImageSharp.Web
         /// <summary>
         /// The command used by image requests for transporting Hash-based Message Authentication Code (HMAC) tokens.
         /// </summary>
-        public const string TokenCommand = "hmac";
+        [Obsolete("Use RequestAuthorizationUtilities.TokenCommand instead.")]
+        public const string TokenCommand = RequestAuthorizationUtilities.TokenCommand;
 
         /// <summary>
         /// Computes a Hash-based Message Authentication Code (HMAC) by using the SHA256 hash function.
