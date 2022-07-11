@@ -78,14 +78,14 @@ namespace SixLabors.ImageSharp.Web.Middleware
         private readonly IImageWebProcessor[] processors;
 
         /// <summary>
-        /// The cache key.
-        /// </summary>
-        private readonly ICacheKey cacheKey;
-
-        /// <summary>
         /// The image cache.
         /// </summary>
         private readonly IImageCache cache;
+
+        /// <summary>
+        /// The cache key.
+        /// </summary>
+        private readonly ICacheKey cacheKey;
 
         /// <summary>
         /// The hashing implementation to use when generating cached file names.
@@ -93,19 +93,14 @@ namespace SixLabors.ImageSharp.Web.Middleware
         private readonly ICacheHash cacheHash;
 
         /// <summary>
-        /// Contains various helper methods based on the current configuration.
-        /// </summary>
-        private readonly FormatUtilities formatUtilities;
-
-        /// <summary>
         /// Used to parse processing commands.
         /// </summary>
         private readonly CommandParser commandParser;
 
         /// <summary>
-        /// The culture to use when parsing processing commands.
+        /// Contains various helper methods based on the current configuration.
         /// </summary>
-        private readonly CultureInfo parserCulture;
+        private readonly FormatUtilities formatUtilities;
 
         /// <summary>
         /// The lock used to prevent concurrent processing of the same exact image request.
@@ -113,9 +108,14 @@ namespace SixLabors.ImageSharp.Web.Middleware
         private readonly AsyncKeyReaderWriterLock<string> asyncKeyLock;
 
         /// <summary>
-        /// Contains helpers that allow authorization of image requests.
+        /// The collection of known commands gathered from the processors.
         /// </summary>
-        private readonly RequestAuthorizationUtilities requestAuthorizationUtilities;
+        private readonly HashSet<string> knownCommands;
+
+        /// <summary>
+        /// The culture to use when parsing processing commands.
+        /// </summary>
+        private readonly CultureInfo parserCulture;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ImageSharpMiddleware"/> class.
@@ -132,7 +132,6 @@ namespace SixLabors.ImageSharp.Web.Middleware
         /// <param name="commandParser">The command parser.</param>
         /// <param name="formatUtilities">Contains various format helper methods based on the current configuration.</param>
         /// <param name="asyncKeyLock">The async key lock.</param>
-        /// <param name="requestAuthorizationUtilities">Contains helpers that allow authorization of image requests.</param>
         public ImageSharpMiddleware(
             RequestDelegate next,
             IOptions<ImageSharpMiddlewareOptions> options,
@@ -145,8 +144,7 @@ namespace SixLabors.ImageSharp.Web.Middleware
             ICacheHash cacheHash,
             CommandParser commandParser,
             FormatUtilities formatUtilities,
-            AsyncKeyReaderWriterLock<string> asyncKeyLock,
-            RequestAuthorizationUtilities requestAuthorizationUtilities)
+            AsyncKeyReaderWriterLock<string> asyncKeyLock)
         {
             Guard.NotNull(next, nameof(next));
             Guard.NotNull(options, nameof(options));
@@ -160,10 +158,10 @@ namespace SixLabors.ImageSharp.Web.Middleware
             Guard.NotNull(commandParser, nameof(commandParser));
             Guard.NotNull(formatUtilities, nameof(formatUtilities));
             Guard.NotNull(asyncKeyLock, nameof(asyncKeyLock));
-            Guard.NotNull(requestAuthorizationUtilities, nameof(requestAuthorizationUtilities));
 
             this.next = next;
             this.options = options.Value;
+            this.logger = loggerFactory.CreateLogger<ImageSharpMiddleware>();
             this.requestParser = requestParser;
             this.providers = resolvers as IImageProvider[] ?? resolvers.ToArray();
             this.processors = processors as IImageWebProcessor[] ?? processors.ToArray();
@@ -171,14 +169,13 @@ namespace SixLabors.ImageSharp.Web.Middleware
             this.cacheKey = cacheKey;
             this.cacheHash = cacheHash;
             this.commandParser = commandParser;
+            this.formatUtilities = formatUtilities;
+            this.asyncKeyLock = asyncKeyLock;
+
+            this.knownCommands = processors.GetKnownCommands();
             this.parserCulture = this.options.UseInvariantParsingCulture
                 ? CultureInfo.InvariantCulture
                 : CultureInfo.CurrentCulture;
-
-            this.logger = loggerFactory.CreateLogger<ImageSharpMiddleware>();
-            this.formatUtilities = formatUtilities;
-            this.asyncKeyLock = asyncKeyLock;
-            this.requestAuthorizationUtilities = requestAuthorizationUtilities;
         }
 
         /// <summary>
@@ -220,7 +217,7 @@ namespace SixLabors.ImageSharp.Web.Middleware
                 token = commands.GetValueOrDefault(RequestAuthorizationUtilities.TokenCommand);
             }
 
-            this.requestAuthorizationUtilities.StripUnknownCommands(commands);
+            commands.RemoveUnknownCommands(this.knownCommands);
             ImageCommandContext imageCommandContext = new(httpContext, commands, this.commandParser, this.parserCulture);
 
             // At this point we know that this is an image request so should attempt to compute a validating HMAC.
@@ -235,8 +232,8 @@ namespace SixLabors.ImageSharp.Web.Middleware
                 // As a rule all image requests should contain valid commands only.
                 // Key generation uses string.Create under the hood with very low allocation so should be good enough as a cache key.
                 hmac = await HMACTokenLru.GetOrAddAsync(
-                    httpContext.Request.GetEncodedUrl(),
-                    _ => this.requestAuthorizationUtilities.ComputeHMACAsync(imageCommandContext));
+                    CaseHandlingUriBuilder.Encode(CaseHandlingUriBuilder.CaseHandling.None, httpContext.Request),
+                    _ => this.options.OnComputeHMACAsync(imageCommandContext, secret));
             }
 
             await this.options.OnParseCommandsAsync.Invoke(imageCommandContext);

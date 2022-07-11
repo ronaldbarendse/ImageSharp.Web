@@ -133,7 +133,11 @@ namespace SixLabors.ImageSharp.Web
         /// <param name="uri">The Uri to encode.</param>
         /// <returns>The encoded string version of <paramref name="uri"/>.</returns>
         public static string Encode(CaseHandling handling, string uri)
-            => Encode(handling, new Uri(uri, UriKind.RelativeOrAbsolute));
+        {
+            Guard.NotNull(uri, nameof(uri));
+
+            return Encode(handling, new Uri(uri, UriKind.RelativeOrAbsolute));
+        }
 
         /// <summary>
         /// Generates a string from the given absolute or relative Uri that is appropriately encoded for use in
@@ -145,13 +149,14 @@ namespace SixLabors.ImageSharp.Web
         public static string Encode(CaseHandling handling, Uri uri)
         {
             Guard.NotNull(uri, nameof(uri));
+
             if (uri.IsAbsoluteUri)
             {
                 return BuildAbsolute(
                     handling,
                     scheme: uri.Scheme,
                     host: HostString.FromUriComponent(uri),
-                    pathBase: PathString.FromUriComponent(uri),
+                    path: PathString.FromUriComponent(uri),
                     query: QueryString.FromUriComponent(uri));
             }
             else
@@ -162,6 +167,26 @@ namespace SixLabors.ImageSharp.Web
                     path: PathString.FromUriComponent(faux),
                     query: QueryString.FromUriComponent(faux));
             }
+        }
+
+        /// <summary>
+        /// Generates a string from the given request that is appropriately encoded for use in
+        /// HTTP headers. Note that a unicode host name will be encoded as punycode.
+        /// </summary>
+        /// <param name="handling">Determines case handling for the result.</param>
+        /// <param name="request">The request to encode.</param>
+        /// <returns>The encoded string version of <paramref name="request"/>.</returns>
+        internal static string Encode(CaseHandling handling, HttpRequest request)
+        {
+            Guard.NotNull(request, nameof(request));
+
+            return BuildAbsolute(
+                    handling,
+                    scheme: request.Scheme,
+                    host: request.Host,
+                    pathBase: request.PathBase,
+                    path: request.Path,
+                    query: request.QueryString);
         }
 
         /// <summary>

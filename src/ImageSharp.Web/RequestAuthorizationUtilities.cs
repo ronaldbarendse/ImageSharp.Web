@@ -28,12 +28,14 @@ namespace SixLabors.ImageSharp.Web
         /// The command used by image requests for transporting Hash-based Message Authentication Code (HMAC) tokens.
         /// </summary>
         public const string TokenCommand = HMACUtilities.TokenCommand;
+
         private static readonly Uri FallbackBaseUri = new("http://localhost/");
-        private readonly HashSet<string> knownCommands;
+
         private readonly ImageSharpMiddlewareOptions options;
+        private readonly IRequestParser requestParser;
+        private readonly HashSet<string> knownCommands;
         private readonly CommandParser commandParser;
         private readonly CultureInfo parserCulture;
-        private readonly IRequestParser requestParser;
         private readonly IServiceProvider serviceProvider;
 
         /// <summary>
@@ -59,42 +61,12 @@ namespace SixLabors.ImageSharp.Web
 
             this.options = options.Value;
             this.requestParser = requestParser;
+            this.knownCommands = processors.GetKnownCommands();
             this.commandParser = commandParser;
             this.parserCulture = this.options.UseInvariantParsingCulture
                 ? CultureInfo.InvariantCulture
                 : CultureInfo.CurrentCulture;
             this.serviceProvider = serviceProvider;
-
-            HashSet<string> commands = new(StringComparer.OrdinalIgnoreCase);
-            foreach (IImageWebProcessor processor in processors)
-            {
-                foreach (string command in processor.Commands)
-                {
-                    commands.Add(command);
-                }
-            }
-
-            this.knownCommands = commands;
-        }
-
-        /// <summary>
-        /// Strips any unknown commands from the command collection.
-        /// </summary>
-        /// <param name="commands">The unsanitized command collection.</param>
-        public void StripUnknownCommands(CommandCollection commands)
-        {
-            if (commands?.Count > 0)
-            {
-                // Strip out any unknown commands, if needed.
-                var keys = new List<string>(commands.Keys);
-                for (int i = keys.Count - 1; i >= 0; i--)
-                {
-                    if (!this.knownCommands.Contains(keys[i]))
-                    {
-                        commands.RemoveAt(i);
-                    }
-                }
-            }
         }
 
         /// <summary>
@@ -221,7 +193,7 @@ namespace SixLabors.ImageSharp.Web
             CommandCollection commands = this.requestParser.ParseRequestCommands(context);
             if (handling == CommandHandling.Sanitize)
             {
-                this.StripUnknownCommands(commands);
+                commands.RemoveUnknownCommands(this.knownCommands);
             }
 
             ImageCommandContext imageCommandContext = new(context, commands, this.commandParser, this.parserCulture);
