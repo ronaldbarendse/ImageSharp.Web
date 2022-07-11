@@ -3,8 +3,6 @@
 
 using System;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Options;
 using SixLabors.ImageSharp.Web.Caching;
 using SixLabors.ImageSharp.Web.Commands;
 using SixLabors.ImageSharp.Web.Commands.Converters;
@@ -54,13 +52,12 @@ namespace SixLabors.ImageSharp.Web.DependencyInjection
         {
             builder.Services.Configure(setupAction);
 
+            builder.Services.AddSingleton<CommandParser>();
             builder.Services.AddSingleton<FormatUtilities>();
-
             builder.Services.AddSingleton<AsyncKeyReaderWriterLock<string>>();
+            builder.Services.AddSingleton<RequestAuthorizationUtilities>();
 
             builder.SetRequestParser<QueryCollectionRequestParser>();
-
-            builder.Services.AddSingleton<ImageSharpRequestAuthorizationUtilities>();
 
             builder.SetCache<PhysicalFileSystemCache>();
 
@@ -121,8 +118,6 @@ namespace SixLabors.ImageSharp.Web.DependencyInjection
 
             builder.AddConverter<ColorConverter>();
             builder.AddConverter<EnumConverter>();
-
-            builder.Services.AddSingleton<CommandParser>();
         }
     }
 }

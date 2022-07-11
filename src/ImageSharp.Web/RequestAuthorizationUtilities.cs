@@ -1,4 +1,4 @@
-// Copyright (c) Six Labors.
+﻿// Copyright (c) Six Labors.
 // Licensed under the Apache License, Version 2.0.
 
 using System;
@@ -22,7 +22,7 @@ namespace SixLabors.ImageSharp.Web
     /// <summary>
     /// Contains various helper methods for authorizing image requests.
     /// </summary>
-    public sealed class ImageSharpRequestAuthorizationUtilities
+    public sealed class RequestAuthorizationUtilities
     {
         /// <summary>
         /// The command used by image requests for transporting Hash-based Message Authentication Code (HMAC) tokens.
@@ -37,14 +37,14 @@ namespace SixLabors.ImageSharp.Web
         private readonly IServiceProvider serviceProvider;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImageSharpRequestAuthorizationUtilities"/> class.
+        /// Initializes a new instance of the <see cref="RequestAuthorizationUtilities"/> class.
         /// </summary>
         /// <param name="options">The middleware configuration options.</param>
         /// <param name="requestParser">An <see cref="IRequestParser"/> instance used to parse image requests for commands.</param>
         /// <param name="processors">A collection of <see cref="IImageWebProcessor"/> instances used to process images.</param>
         /// <param name="commandParser">The command parser.</param>
         /// <param name="serviceProvider">The service provider.</param>
-        public ImageSharpRequestAuthorizationUtilities(
+        public RequestAuthorizationUtilities(
             IOptions<ImageSharpMiddlewareOptions> options,
             IRequestParser requestParser,
             IEnumerable<IImageWebProcessor> processors,

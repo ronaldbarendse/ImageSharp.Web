@@ -115,7 +115,7 @@ namespace SixLabors.ImageSharp.Web.Middleware
         /// <summary>
         /// Contains helpers that allow authorization of image requests.
         /// </summary>
-        private readonly ImageSharpRequestAuthorizationUtilities authorizationUtilities;
+        private readonly RequestAuthorizationUtilities requestAuthorizationUtilities;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ImageSharpMiddleware"/> class.
@@ -146,7 +146,7 @@ namespace SixLabors.ImageSharp.Web.Middleware
             CommandParser commandParser,
             FormatUtilities formatUtilities,
             AsyncKeyReaderWriterLock<string> asyncKeyLock,
-            ImageSharpRequestAuthorizationUtilities requestAuthorizationUtilities)
+            RequestAuthorizationUtilities requestAuthorizationUtilities)
         {
             Guard.NotNull(next, nameof(next));
             Guard.NotNull(options, nameof(options));
@@ -178,7 +178,7 @@ namespace SixLabors.ImageSharp.Web.Middleware
             this.logger = loggerFactory.CreateLogger<ImageSharpMiddleware>();
             this.formatUtilities = formatUtilities;
             this.asyncKeyLock = asyncKeyLock;
-            this.authorizationUtilities = requestAuthorizationUtilities;
+            this.requestAuthorizationUtilities = requestAuthorizationUtilities;
         }
 
         /// <summary>
@@ -217,10 +217,10 @@ namespace SixLabors.ImageSharp.Web.Middleware
             if (secret?.Length > 0)
             {
                 checkHMAC = true;
-                token = commands.GetValueOrDefault(ImageSharpRequestAuthorizationUtilities.TokenCommand);
+                token = commands.GetValueOrDefault(RequestAuthorizationUtilities.TokenCommand);
             }
 
-            this.authorizationUtilities.StripUnknownCommands(commands);
+            this.requestAuthorizationUtilities.StripUnknownCommands(commands);
             ImageCommandContext imageCommandContext = new(httpContext, commands, this.commandParser, this.parserCulture);
 
             // At this point we know that this is an image request so should attempt to compute a validating HMAC.
@@ -236,7 +236,7 @@ namespace SixLabors.ImageSharp.Web.Middleware
                 // Key generation uses string.Create under the hood with very low allocation so should be good enough as a cache key.
                 hmac = await HMACTokenLru.GetOrAddAsync(
                     httpContext.Request.GetEncodedUrl(),
-                    _ => this.authorizationUtilities.ComputeHMACAsync(imageCommandContext));
+                    _ => this.requestAuthorizationUtilities.ComputeHMACAsync(imageCommandContext));
             }
 
             await this.options.OnParseCommandsAsync.Invoke(imageCommandContext);
