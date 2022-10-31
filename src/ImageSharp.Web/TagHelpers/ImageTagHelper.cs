@@ -29,6 +29,7 @@ namespace SixLabors.ImageSharp.Web.TagHelpers
     [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + RColorAttributeName, TagStructure = TagStructure.WithoutEndTag)]
     [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + CompandAttributeName, TagStructure = TagStructure.WithoutEndTag)]
     [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + OrientAttributeName, TagStructure = TagStructure.WithoutEndTag)]
+    [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + SamplerAttributeName, TagStructure = TagStructure.WithoutEndTag)]
     [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + AutoOrientAttributeName, TagStructure = TagStructure.WithoutEndTag)]
     [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + FormatAttributeName, TagStructure = TagStructure.WithoutEndTag)]
     [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + BgColorAttributeName, TagStructure = TagStructure.WithoutEndTag)]
