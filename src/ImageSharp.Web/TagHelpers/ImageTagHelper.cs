@@ -245,12 +245,12 @@ namespace SixLabors.ImageSharp.Web.TagHelpers
 
             if (this.ResizeMode.HasValue)
             {
-                commands.Add(ResizeWebProcessor.Mode, this.ResizeMode.Value.ToString());
+                commands.Add(ResizeWebProcessor.Mode, this.ResizeMode.Value.ToString().ToLowerInvariant());
             }
 
             if (this.AnchorPosition.HasValue)
             {
-                commands.Add(ResizeWebProcessor.Anchor, this.AnchorPosition.Value.ToString());
+                commands.Add(ResizeWebProcessor.Anchor, this.AnchorPosition.Value.ToString().ToLowerInvariant());
             }
 
             if (this.Center.HasValue)
