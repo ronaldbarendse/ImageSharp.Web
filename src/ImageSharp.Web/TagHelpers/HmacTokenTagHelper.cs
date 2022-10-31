@@ -14,12 +14,15 @@ using SixLabors.ImageSharp.Web.Middleware;
 namespace SixLabors.ImageSharp.Web.TagHelpers
 {
     /// <summary>
-    /// A tag helper implementation targeting &lt;img&gt; element that allows the automatic generation of HMAC image processing protection tokens.
+    /// A tag helper implementation targeting &lt;img&gt; and &lt;source&gt; elements that allows the automatic generation of HMAC image processing protection tokens.
     /// </summary>
     [HtmlTargetElement("img", Attributes = SrcAttributeName, TagStructure = TagStructure.WithoutEndTag)]
+    [HtmlTargetElement("img", Attributes = SrcSetAttributeName, TagStructure = TagStructure.WithoutEndTag)]
+    [HtmlTargetElement("source", Attributes = SrcSetAttributeName, TagStructure = TagStructure.WithoutEndTag)]
     public class HmacTokenTagHelper : UrlResolutionTagHelper
     {
         private const string SrcAttributeName = "src";
+        private const string SrcSetAttributeName = "srcset";
 
         private readonly ImageSharpMiddlewareOptions options;
         private readonly RequestAuthorizationUtilities authorizationUtilities;
@@ -57,14 +60,32 @@ namespace SixLabors.ImageSharp.Web.TagHelpers
         [HtmlAttributeName(SrcAttributeName)]
         public string Src { get; set; }
 
+        /// <summary>
+        /// Gets or sets the source set of the image.
+        /// </summary>
+        /// <remarks>
+        /// Passed through to the generated HTML in all cases.
+        /// </remarks>
+        [HtmlAttributeName(SrcSetAttributeName)]
+        public string SrcSet { get; set; }
+
         /// <inheritdoc />
         public override void Process(TagHelperContext context, TagHelperOutput output)
         {
             Guard.NotNull(context, nameof(context));
             Guard.NotNull(output, nameof(output));
 
-            output.CopyHtmlAttribute(SrcAttributeName, context);
-            this.ProcessUrlAttribute(SrcAttributeName, output);
+            if (context.AllAttributes.ContainsName(SrcAttributeName))
+            {
+                output.CopyHtmlAttribute(SrcAttributeName, context);
+                this.ProcessUrlAttribute(SrcAttributeName, output);
+            }
+
+            if (context.AllAttributes.ContainsName(SrcSetAttributeName))
+            {
+                output.CopyHtmlAttribute(SrcSetAttributeName, context);
+                this.ProcessUrlAttribute(SrcSetAttributeName, output);
+            }
 
             byte[] secret = this.options.HMACSecretKey;
             if (secret is null || secret.Length == 0)
@@ -72,20 +93,29 @@ namespace SixLabors.ImageSharp.Web.TagHelpers
                 return;
             }
 
-            // Retrieve the TagHelperOutput variation of the "src" attribute in case other TagHelpers in the
-            // pipeline have touched the value. If the value is already encoded this ImageTagHelper may
+            // Retrieve the TagHelperOutput variation of the "src"/"srcset" attribute in case other TagHelpers in the
+            // pipeline have touched the value. If the value is already encoded this HmacTokenTagHelper may
             // not function properly.
-            string src = output.Attributes[SrcAttributeName].Value as string;
-            if (string.IsNullOrWhiteSpace(src))
+            string src = output.Attributes[SrcAttributeName]?.Value as string;
+            if (!string.IsNullOrWhiteSpace(src))
             {
-                return;
+                string hmac = this.authorizationUtilities.ComputeHMAC(src, CommandHandling.Sanitize);
+                if (hmac is not null)
+                {
+                    this.Src = AddQueryString(src, hmac);
+                    output.Attributes.SetAttribute(SrcAttributeName, this.Src);
+                }
             }
 
-            string hmac = this.authorizationUtilities.ComputeHMAC(src, CommandHandling.Sanitize);
-            if (hmac is not null)
+            string srcset = output.Attributes[SrcSetAttributeName]?.Value as string;
+            if (!string.IsNullOrWhiteSpace(srcset))
             {
-                this.Src = AddQueryString(src, hmac);
-                output.Attributes.SetAttribute(SrcAttributeName, this.Src);
+                string hmac = this.authorizationUtilities.ComputeHMAC(srcset, CommandHandling.Sanitize);
+                if (hmac is not null)
+                {
+                    this.SrcSet = AddQueryString(srcset, hmac);
+                    output.Attributes.SetAttribute(SrcSetAttributeName, this.SrcSet);
+                }
             }
         }
 
