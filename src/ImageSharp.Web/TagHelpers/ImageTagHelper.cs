@@ -23,13 +23,13 @@ namespace SixLabors.ImageSharp.Web.TagHelpers
     /// </summary>
     [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + WidthAttributeName, TagStructure = TagStructure.WithoutEndTag)]
     [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + HeightAttributeName, TagStructure = TagStructure.WithoutEndTag)]
-    [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + AnchorAttributeName, TagStructure = TagStructure.WithoutEndTag)]
     [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + RModeAttributeName, TagStructure = TagStructure.WithoutEndTag)]
-    [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + XyAttributeName, TagStructure = TagStructure.WithoutEndTag)]
+    [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + RAnchorAttributeName, TagStructure = TagStructure.WithoutEndTag)]
+    [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + RXyAttributeName, TagStructure = TagStructure.WithoutEndTag)]
     [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + RColorAttributeName, TagStructure = TagStructure.WithoutEndTag)]
     [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + CompandAttributeName, TagStructure = TagStructure.WithoutEndTag)]
     [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + OrientAttributeName, TagStructure = TagStructure.WithoutEndTag)]
-    [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + SamplerAttributeName, TagStructure = TagStructure.WithoutEndTag)]
+    [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + RSamplerAttributeName, TagStructure = TagStructure.WithoutEndTag)]
     [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + AutoOrientAttributeName, TagStructure = TagStructure.WithoutEndTag)]
     [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + FormatAttributeName, TagStructure = TagStructure.WithoutEndTag)]
     [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + BgColorAttributeName, TagStructure = TagStructure.WithoutEndTag)]
@@ -40,13 +40,13 @@ namespace SixLabors.ImageSharp.Web.TagHelpers
         private const string AttributePrefix = "imagesharp-";
         private const string WidthAttributeName = AttributePrefix + ResizeWebProcessor.Width;
         private const string HeightAttributeName = AttributePrefix + ResizeWebProcessor.Height;
-        private const string AnchorAttributeName = AttributePrefix + ResizeWebProcessor.Anchor;
         private const string RModeAttributeName = AttributePrefix + ResizeWebProcessor.Mode;
-        private const string XyAttributeName = AttributePrefix + ResizeWebProcessor.Xy;
+        private const string RAnchorAttributeName = AttributePrefix + ResizeWebProcessor.Anchor;
+        private const string RXyAttributeName = AttributePrefix + ResizeWebProcessor.Xy;
         private const string RColorAttributeName = AttributePrefix + ResizeWebProcessor.Color;
         private const string CompandAttributeName = AttributePrefix + ResizeWebProcessor.Compand;
         private const string OrientAttributeName = AttributePrefix + ResizeWebProcessor.Orient;
-        private const string SamplerAttributeName = AttributePrefix + ResizeWebProcessor.Sampler;
+        private const string RSamplerAttributeName = AttributePrefix + ResizeWebProcessor.Sampler;
         private const string AutoOrientAttributeName = AttributePrefix + AutoOrientWebProcessor.AutoOrient;
         private const string FormatAttributeName = AttributePrefix + FormatWebProcessor.Format;
         private const string BgColorAttributeName = AttributePrefix + BackgroundColorWebProcessor.Color;
@@ -114,13 +114,13 @@ namespace SixLabors.ImageSharp.Web.TagHelpers
         /// <summary>
         /// Gets or sets the anchor position.
         /// </summary>
-        [HtmlAttributeName(AnchorAttributeName)]
+        [HtmlAttributeName(RAnchorAttributeName)]
         public AnchorPositionMode? AnchorPosition { get; set; }
 
         /// <summary>
         /// Gets or sets the center coordinates.
         /// </summary>
-        [HtmlAttributeName(XyAttributeName)]
+        [HtmlAttributeName(RXyAttributeName)]
         public PointF? Center { get; set; }
 
         /// <summary>
@@ -147,7 +147,7 @@ namespace SixLabors.ImageSharp.Web.TagHelpers
         /// <summary>
         /// Gets or sets the sampling algorithm to use when resizing images.
         /// </summary>
-        [HtmlAttributeName(SamplerAttributeName)]
+        [HtmlAttributeName(RSamplerAttributeName)]
         public ResamplerCommand? Sampler { get; set; }
 
         /// <summary>
