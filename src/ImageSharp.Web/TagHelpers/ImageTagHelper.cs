@@ -19,7 +19,7 @@ using SixLabors.ImageSharp.Web.Processors;
 namespace SixLabors.ImageSharp.Web.TagHelpers
 {
     /// <summary>
-    /// A TagHelper implementation targeting &lt;img&gt; element that allows the automatic generation of HMAC protected processing commands.
+    /// A tag helper implementation targeting &lt;img&gt; element that allows the automatic generation of image processing commands.
     /// </summary>
     [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + WidthAttributeName, TagStructure = TagStructure.WithoutEndTag)]
     [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + HeightAttributeName, TagStructure = TagStructure.WithoutEndTag)]
@@ -33,7 +33,6 @@ namespace SixLabors.ImageSharp.Web.TagHelpers
     [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + FormatAttributeName, TagStructure = TagStructure.WithoutEndTag)]
     [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + BgColorAttributeName, TagStructure = TagStructure.WithoutEndTag)]
     [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + QualityAttributeName, TagStructure = TagStructure.WithoutEndTag)]
-    [HtmlTargetElement("img", Attributes = SrcAttributeName + "," + HMACAttributeName, TagStructure = TagStructure.WithoutEndTag)]
     public class ImageTagHelper : UrlResolutionTagHelper
     {
         private const string SrcAttributeName = "src";
@@ -51,38 +50,32 @@ namespace SixLabors.ImageSharp.Web.TagHelpers
         private const string FormatAttributeName = AttributePrefix + FormatWebProcessor.Format;
         private const string BgColorAttributeName = AttributePrefix + BackgroundColorWebProcessor.Color;
         private const string QualityAttributeName = AttributePrefix + QualityWebProcessor.Quality;
-        private const string HMACAttributeName = AttributePrefix + RequestAuthorizationUtilities.TokenCommand;
 
-        private readonly ImageSharpMiddlewareOptions options;
         private readonly CultureInfo parserCulture;
         private readonly char separator;
-        private readonly RequestAuthorizationUtilities authorizationUtilities;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ImageTagHelper"/> class.
         /// </summary>
         /// <param name="options">The middleware configuration options.</param>
-        /// <param name="authorizationUtilities">Contains helpers that allow authorization of image requests.</param>
         /// <param name="urlHelperFactory">The URL helper factory.</param>
         /// <param name="htmlEncoder">The HTML encorder.</param>
         public ImageTagHelper(
             IOptions<ImageSharpMiddlewareOptions> options,
-            RequestAuthorizationUtilities authorizationUtilities,
             IUrlHelperFactory urlHelperFactory,
             HtmlEncoder htmlEncoder)
             : base(urlHelperFactory, htmlEncoder)
         {
             Guard.NotNull(options, nameof(options));
-            Guard.NotNull(authorizationUtilities, nameof(authorizationUtilities));
 
-            this.options = options.Value;
-            this.parserCulture = this.options.UseInvariantParsingCulture
+            this.parserCulture = options.Value.UseInvariantParsingCulture
                 ? CultureInfo.InvariantCulture
                 : CultureInfo.CurrentCulture;
             this.separator = this.parserCulture.TextInfo.ListSeparator[0];
-
-            this.authorizationUtilities = authorizationUtilities;
         }
+
+        /// <inheritdoc />
+        public override int Order => 0;
 
         /// <summary>
         /// Gets or sets the src.
@@ -183,50 +176,32 @@ namespace SixLabors.ImageSharp.Web.TagHelpers
         [HtmlAttributeName(QualityAttributeName)]
         public int? Quality { get; set; }
 
-        /// <summary>
-        /// Gets or sets a value indicating whether to append a HMAC token to the request.
-        /// This value is always <see langword="true"/>. HMAC token usage is controlled by populating the
-        /// <see cref="ImageSharpMiddlewareOptions.HMACSecretKey"/> property.
-        /// </summary>
-        [HtmlAttributeName(HMACAttributeName)]
-        public bool AppendHMAC { get => true; set => _ = true; }
-
         /// <inheritdoc />
         public override void Process(TagHelperContext context, TagHelperOutput output)
         {
             Guard.NotNull(context, nameof(context));
             Guard.NotNull(output, nameof(output));
 
-            string src = output.Attributes[SrcAttributeName]?.Value as string ?? this.Src;
+            output.CopyHtmlAttribute(SrcAttributeName, context);
+            this.ProcessUrlAttribute(SrcAttributeName, output);
+
+            // Retrieve the TagHelperOutput variation of the "src" attribute in case other TagHelpers in the
+            // pipeline have touched the value. If the value is already encoded this ImageTagHelper may
+            // not function properly.
+            string src = output.Attributes[SrcAttributeName].Value as string;
             if (string.IsNullOrWhiteSpace(src))
             {
                 return;
             }
 
-            output.CopyHtmlAttribute(SrcAttributeName, context);
-            this.ProcessUrlAttribute(SrcAttributeName, output);
-
             CommandCollection commands = new();
             this.AddProcessingCommands(context, output, commands, this.parserCulture);
 
-            byte[] secret = this.options.HMACSecretKey;
-            if (commands.Count > 0 || secret?.Length > 0)
+            if (commands.Count > 0)
             {
-                // Retrieve the TagHelperOutput variation of the "src" attribute in case other TagHelpers in the
-                // pipeline have touched the value. If the value is already encoded this helper may
-                // not function properly.
-                src = output.Attributes[SrcAttributeName].Value as string;
-                if (secret?.Length > 0)
-                {
-                    string hash = this.authorizationUtilities.ComputeHMAC(src, commands, secret);
-                    commands.Add(RequestAuthorizationUtilities.TokenCommand, hash);
-                }
-
-                src = AddQueryString(src, commands);
+                this.Src = AddQueryString(src, commands);
+                output.Attributes.SetAttribute(SrcAttributeName, this.Src);
             }
-
-            this.Src = src;
-            output.Attributes.SetAttribute(SrcAttributeName, src);
         }
 
         /// <summary>

@@ -26,8 +26,7 @@ namespace ImageSharp.Web.Sample
             IServiceCollection services = builder.Services;
             services.AddRazorPages();
 
-            // TODO: Enable HMAC
-            services.AddImageSharp(options => options.HMACSecretKey = new byte[] { 1, 2, 3, 4, 5 }) 
+            services.AddImageSharp(options => options.HMACSecretKey = new byte[] { 1, 2, 3, 4, 5 })
                 .SetRequestParser<QueryCollectionRequestParser>()
                 .Configure<PhysicalFileSystemCacheOptions>(options =>
                 {
