@@ -225,7 +225,7 @@ namespace SixLabors.ImageSharp.Web.Middleware
 
             // At this point we know that this is an image request so should attempt to compute a validating HMAC.
             string hmac = null;
-            if (checkHMAC && token != null)
+            if (checkHMAC)
             {
                 // Generate and cache a HMAC to validate against based upon the current valid commands from the request.
                 //
@@ -250,13 +250,10 @@ namespace SixLabors.ImageSharp.Web.Middleware
 
             // At this point we know that this is an image request designed for processing via this middleware.
             // Check for a token if required and reject if invalid.
-            if (checkHMAC)
+            if (checkHMAC && hmac != token)
             {
-                if (token == null || hmac != token)
-                {
-                    SetBadRequest(httpContext);
-                    return;
-                }
+                SetBadRequest(httpContext);
+                return;
             }
 
             IImageResolver sourceImageResolver = await provider.GetAsync(httpContext);
