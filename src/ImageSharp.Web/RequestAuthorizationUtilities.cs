@@ -219,11 +219,6 @@ namespace SixLabors.ImageSharp.Web
                 this.StripUnknownCommands(commands);
             }
 
-            if (commands.Count == 0)
-            {
-                return null;
-            }
-
             ImageCommandContext imageCommandContext = new(context, commands, this.commandParser, this.parserCulture);
             return await this.options.OnComputeHMACAsync(imageCommandContext, secret);
         }
@@ -238,7 +233,7 @@ namespace SixLabors.ImageSharp.Web
         /// <param name="context">Contains information about the current image request and parsed commands.</param>
         /// <returns>The computed HMAC.</returns>
         internal Task<string> ComputeHMACAsync(ImageCommandContext context)
-            => context.Commands.Count == 0 ? Task.FromResult<string>(null) : this.options.OnComputeHMACAsync(context, this.options.HMACSecretKey);
+            => this.options.OnComputeHMACAsync(context, this.options.HMACSecretKey);
 
         private static void ToComponents(
             Uri uri,

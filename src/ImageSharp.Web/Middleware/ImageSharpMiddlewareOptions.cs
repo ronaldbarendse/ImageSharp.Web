@@ -18,6 +18,13 @@ namespace SixLabors.ImageSharp.Web.Middleware
     {
         private Func<ImageCommandContext, byte[], Task<string>> onComputeHMACAsync = (context, secret) =>
         {
+            if (context.Commands.Count == 0)
+            {
+                // Skip HMAC when no commands are supplied in the request
+                return Task.FromResult<string>(null);
+            }
+
+            // Default to SHA256 hash of relative, lowercased URL
             string uri = CaseHandlingUriBuilder.BuildRelative(
                  CaseHandlingUriBuilder.CaseHandling.LowerInvariant,
                  context.Context.Request.PathBase,
