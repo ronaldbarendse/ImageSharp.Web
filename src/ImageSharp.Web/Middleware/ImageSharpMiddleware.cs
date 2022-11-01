@@ -250,7 +250,7 @@ namespace SixLabors.ImageSharp.Web.Middleware
 
             // At this point we know that this is an image request designed for processing via this middleware.
             // Check for a token if required and reject if invalid.
-            if (checkHMAC && hmac != token)
+            if (checkHMAC && hmac != null && hmac != token)
             {
                 SetBadRequest(httpContext);
                 return;
